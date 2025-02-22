@@ -1,0 +1,297 @@
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.model_selection import train_test_split
+
+
+df_users= pd.read_csv('tags.csv')
+
+df_ratings= pd.read_csv('ratings.csv')
+
+
+df_movies= pd.read_csv('movies.csv')
+
+df_movies.head()
+
+df_users.head()
+
+df_ratings.head()
+
+ratings_train, ratings_test = train_test_split(df_ratings, test_size=0.2, random_state=42)
+
+ratings_train.shape, ratings_test.shape
+
+unique_users= df_users.userId.unique().shape[0]
+unique_users
+
+unique_movies= df_movies.movieId.unique().shape[0]
+unique_movies
+
+from scipy.sparse import csr_matrix
+
+user_movies_data= df_ratings.pivot(index='movieId', columns='userId', values='rating').fillna(0)
+user_movies_data
+
+
+
+genre_dummies = df_movies['genres'].str.get_dummies(sep='|')
+df_movies = pd.concat([df_movies, genre_dummies], axis=1)
+df_movies
+
+df_movies['metadata']= ""
+
+df_movies.Action, type(df_movies.Action)
+
+def metadata_Action(x):
+    if x == 1:
+        return "Action"
+    else:
+        return " "
+
+df_movies['metadata_Action'] = df_movies.Action.apply(metadata_Action)
+
+def metadata_Adventure(x):
+    if x == 1:
+        return " Adventure "
+    else:
+        return " "
+
+df_movies['metadata_Adventure'] = df_movies.Adventure.apply(metadata_Adventure)
+
+def metadata_Animation(x):
+    if x == 1:
+        return " Animation "
+    else:
+        return " "
+df_movies['metadata_Animation'] = df_movies.Animation.apply(metadata_Animation)
+
+def metadata_Childrens(x):
+    if x == 1:
+        return " Children's "
+    else:
+        return " "
+
+df_movies["metadata_Children's"] = df_movies["Children"].apply(metadata_Childrens)
+
+df_movies.columns
+
+def metadata_Comedy(x):
+    if x == 1:
+        return " Comedy "
+    else:
+        return " "
+
+df_movies['metadata_Comedy'] = df_movies.Comedy.apply(metadata_Comedy)
+
+def metadata_Crime(x):
+    if x == 1:
+        return " Crime "
+    else:
+        return " "
+
+df_movies['metadata_Crime'] = df_movies.Crime.apply(metadata_Crime)
+
+def metadata_Documentary(x):
+    if x == 1:
+        return " Documentary "
+    else:
+        return " "
+
+df_movies['metadata_Documentary'] = df_movies.Documentary.apply(metadata_Documentary)
+
+def metadata_Drama(x):
+    if x == 1:
+        return " Drama "
+    else:
+        return " "
+
+df_movies['metadata_Drama'] = df_movies.Drama.apply(metadata_Drama)
+
+def metadata_Fantasy(x):
+    if x == 1:
+        return " Fantasy "
+    else:
+        return " "
+
+df_movies['metadata_Fantasy'] = df_movies.Fantasy.apply(metadata_Fantasy)
+
+def metadata_FilmNoir(x):
+    if x == 1:
+        return " Film-Noir "
+    else:
+        return " "
+
+df_movies['metadata_Film-Noir'] = df_movies["Film-Noir"].apply(metadata_FilmNoir)
+
+def metadata_Horror(x):
+    if x == 1:
+        return "Horror "
+    else:
+        return " "
+
+df_movies['metadata_Horror'] = df_movies.Horror.apply(metadata_Horror)
+
+def metadata_Musical(x):
+    if x == 1:
+        return " Musical "
+    else:
+        return " "
+
+df_movies['metadata_Musical'] = df_movies.Musical.apply(metadata_Musical)
+
+def metadata_Mystery(x):
+    if x == 1:
+        return " Mystery "
+    else:
+        return " "
+
+df_movies['metadata_Mystery'] = df_movies.Mystery.apply(metadata_Mystery)
+
+def metadata_Romance(x):
+    if x == 1:
+        return " Romance "
+    else:
+        return " "
+
+df_movies['metadata_Romance'] = df_movies.Romance.apply(metadata_Romance)
+
+def metadata_SciFi(x):
+    if x == 1:
+        return " Sci-Fi "
+    else:
+        return " "
+
+df_movies['metadata_Sci-Fi'] = df_movies["Sci-Fi"].apply(metadata_SciFi)
+
+def metadata_Thriller(x):
+    if x == 1:
+        return " Thriller "
+    else:
+        return " "
+
+df_movies['metadata_Thriller'] = df_movies.Thriller.apply(metadata_Thriller)
+
+def metadata_War(x):
+    if x == 1:
+        return " War "
+    else:
+        return " "
+
+df_movies['metadata_War'] = df_movies.War.apply(metadata_War)
+
+def metadata_Western(x):
+    if x == 1:
+        return " Western "
+    else:
+        return " "
+
+df_movies['metadata_Western'] = df_movies.Western.apply(metadata_Western)
+
+df_movies
+
+df_movies['full_metadata'] = df_movies[['metadata_Action', 'metadata_Adventure',
+'metadata_Animation', 'metadata_Children\'s', 'metadata_Comedy', 'metadata_Crime', 'metadata_Documentary', 'metadata_Drama', 'metadata_Fantasy',
+'metadata_Film-Noir', 'metadata_Horror', 'metadata_Musical', 'metadata_Mystery', 'metadata_Romance', 'metadata_Sci-Fi', 'metadata_Thriller', 'metadata_War', 'metadata_Western']].apply(
+                                          lambda x: ' '.join(x), axis = 1)
+
+df_movies.head()
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf = TfidfVectorizer(stop_words='english')
+tfidf_matrix = tfidf.fit_transform(df_movies['full_metadata'])
+tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), index=df_movies.index.tolist())
+print(tfidf_df.shape)
+
+from sklearn.decomposition import TruncatedSVD
+import matplotlib.pyplot as plt
+svd = TruncatedSVD(n_components=19)
+latent_matrix = svd.fit_transform(tfidf_df)
+explained = svd.explained_variance_ratio_.cumsum()
+plt.plot(explained, '.-', ms = 16, color='red')
+plt.xlabel('Singular value components', fontsize= 12)
+plt.ylabel('Cumulative percent of variance', fontsize=12)
+plt.show()
+
+n = 20
+latent_matrix_1_df = pd.DataFrame(latent_matrix[:,0:n], index=df_movies.title.tolist())
+
+from sklearn.decomposition import TruncatedSVD
+svd = TruncatedSVD(n_components=200)
+latent_matrix_2 = svd.fit_transform(user_movies_data)
+index_to_use = df_movies.iloc[:len(latent_matrix_2)].title.tolist()
+latent_matrix_2_df = pd.DataFrame(
+                             latent_matrix_2, index=index_to_use)
+
+latent_matrix_2_df
+
+explained = svd.explained_variance_ratio_.cumsum()
+plt.plot(explained, '.-', ms = 16, color='red')
+plt.xlabel('Singular value components', fontsize= 12)
+plt.ylabel('Cumulative percent of variance', fontsize=12)
+plt.show()
+
+from sklearn.metrics.pairwise import cosine_similarity
+# take the latent vectors for a selected movie from both content
+# and collaborative matrixes
+common_index = latent_matrix_1_df.index.intersection(latent_matrix_2_df.index)
+latent_matrix_1_df = latent_matrix_1_df.loc[common_index]
+latent_matrix_2_df = latent_matrix_2_df.loc[common_index]
+
+a_1 = np.array(latent_matrix_1_df.loc['Toy Story (1995)']).reshape(1, -1)
+a_2 = np.array(latent_matrix_2_df.loc["Toy Story (1995)"]).reshape(1, -1)
+
+# calculate the similartity of this movie with the others in the list
+score_1 = cosine_similarity(latent_matrix_1_df, a_1).reshape(-1)
+score_2 = cosine_similarity(latent_matrix_2_df, a_2).reshape(-1)
+
+# an average measure of both content and collaborative
+hybrid = ((score_1 + score_2)/2.0)
+
+# form a data frame of similar movies
+dictDf = {'content': score_1 , 'collaborative': score_2, 'hybrid': hybrid}
+# dictDf = {'collaborative': score_2}
+similar = pd.DataFrame(dictDf, index = latent_matrix_2_df.index )
+
+#sort it on the basis of either: content, collaborative or hybrid,
+# here : content
+similar.sort_values('content', ascending=False, inplace=True)
+
+similar[1:].head(11)
+
+similar.sort_values('collaborative', ascending=False, inplace=True)
+
+similar[1:].head(11)
+
+similar.sort_values('hybrid', ascending=False, inplace=True)
+
+similar[1:].head(11)
+
+def recommend_similar_movies(title):
+    # take the latent vectors for a selected movie from both content
+    # and collaborative matrixes
+    a_1 = np.array(latent_matrix_1_df.loc[title]).reshape(1, -1)
+    a_2 = np.array(latent_matrix_2_df.loc[title]).reshape(1, -1)
+
+    # calculate the similartity of this movie with the others in the list
+    score_1 = cosine_similarity(latent_matrix_1_df, a_1).reshape(-1)
+    score_2 = cosine_similarity(latent_matrix_2_df, a_2).reshape(-1)
+
+    # an average measure of both content and collaborative
+    hybrid = ((score_1 + score_2)/2.0)
+
+    # form a data frame of similar movies
+    dictDf = {'content': score_1 , 'collaborative': score_2, 'hybrid': hybrid}
+    similar = pd.DataFrame(dictDf, index = latent_matrix_2_df.index )
+
+    #sort it on the basis of either: content, collaborative or hybrid
+    similar.sort_values('hybrid', ascending=False, inplace=True)
+
+    print(similar[1:].head(11))
+
+recommend_similar_movies("Toy Story (1995)")
+
+recommend_similar_movies("Mission: Impossible (1996)")
+
+recommend_similar_movies("Jurassic Park (1993)")
